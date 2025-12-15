@@ -17,7 +17,7 @@ Key steps:
 """
 
 import numpy as np
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, transpile
 from qiskit.circuit.library import EfficientSU2, TwoLocal
 from qiskit.quantum_info import SparsePauliOp, Statevector
 from qiskit_aer import AerSimulator
@@ -110,7 +110,9 @@ def sample_configurations(
     if seed is not None:
         backend.set_options(seed_simulator=seed)
 
-    job = backend.run(qc, shots=shots)
+    # Transpile to decompose high-level gates (EfficientSU2, TwoLocal) into basic gates
+    qc_transpiled = transpile(qc, backend, optimization_level=0)
+    job = backend.run(qc_transpiled, shots=shots)
     counts = job.result().get_counts()
 
     return counts
@@ -270,7 +272,8 @@ def run_sqd(
     max_configs: int = 50,
     residual_tolerance: float = 1e-6,
     ansatz_reps: int = 2,
-    seed: Optional[int] = None
+    seed: Optional[int] = None,
+    verbose: bool = False
 ) -> SQDResult:
     """
     Run Sample-based Quantum Diagonalization algorithm.
@@ -283,6 +286,7 @@ def run_sqd(
         residual_tolerance: Convergence tolerance
         ansatz_reps: Ansatz circuit repetitions
         seed: Random seed
+        verbose: Print iteration progress
 
     Returns:
         SQDResult with convergence info
@@ -365,6 +369,12 @@ def run_sqd(
 
         final_energy = ritz_energy
         final_residual = residual_norm
+
+        if verbose:
+            log_res = np.log10(residual_norm) if residual_norm > 0 else -15
+            print(f"  iter {iteration + 1:3d} | E = {ritz_energy:12.6f} eV | "
+                  f"residual = {residual_norm:.2e} (log={log_res:.1f}) | "
+                  f"configs = {len(all_configurations):3d}")
 
         # Check convergence
         if residual_norm < residual_tolerance:

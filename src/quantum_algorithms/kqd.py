@@ -286,7 +286,8 @@ def run_kqd(
     trotter_steps: int = 2,
     use_statevector: bool = True,
     shots: int = 8192,
-    seed: Optional[int] = None
+    seed: Optional[int] = None,
+    verbose: bool = False
 ) -> KQDResult:
     """
     Run Krylov Quantum Diagonalization algorithm.
@@ -301,6 +302,7 @@ def run_kqd(
         use_statevector: Use exact statevector simulation
         shots: Number of shots for sampling
         seed: Random seed
+        verbose: Print iteration progress
 
     Returns:
         KQDResult with convergence info and metrics
@@ -365,6 +367,12 @@ def run_kqd(
 
         final_energy = ritz_energy
         final_residual = residual_norm
+
+        if verbose:
+            log_res = np.log10(residual_norm) if residual_norm > 0 else -15
+            print(f"  iter {k - 1:3d} | E = {ritz_energy:12.6f} eV | "
+                  f"residual = {residual_norm:.2e} (log={log_res:.1f}) | "
+                  f"krylov_dim = {len(krylov_states):3d}")
 
         # Check convergence
         if residual_norm < residual_tolerance:

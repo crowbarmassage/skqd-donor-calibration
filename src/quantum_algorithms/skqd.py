@@ -357,7 +357,8 @@ def run_skqd(
     evolution_time: float = 0.1,
     trotter_steps: int = 2,
     shots: int = 8192,
-    seed: Optional[int] = None
+    seed: Optional[int] = None,
+    verbose: bool = False
 ) -> SKQDResult:
     """
     Run Sample-based Krylov Quantum Diagonalization.
@@ -374,6 +375,7 @@ def run_skqd(
         trotter_steps: Trotter steps
         shots: Shots for sampling
         seed: Random seed
+        verbose: Print iteration progress
 
     Returns:
         SKQDResult with convergence info
@@ -442,6 +444,12 @@ def run_skqd(
 
         final_energy = ritz_energy
         final_residual = residual_norm
+
+        if verbose:
+            log_res = np.log10(residual_norm) if residual_norm > 0 else -15
+            print(f"  iter {k - 1:3d} | E = {ritz_energy:12.6f} eV | "
+                  f"residual = {residual_norm:.2e} (log={log_res:.1f}) | "
+                  f"krylov_dim = {len(krylov_states):3d} | E_std = {energy_std:.2e}")
 
         if residual_norm < residual_tolerance:
             converged = True

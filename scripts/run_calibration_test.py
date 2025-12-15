@@ -105,7 +105,8 @@ def run_algorithm(
             max_krylov_dim=max_iter,
             evolution_time=0.5,
             trotter_steps=2,
-            seed=seed
+            seed=seed,
+            verbose=verbose
         )
         return {
             'converged': result.converged,
@@ -120,7 +121,8 @@ def run_algorithm(
             max_iterations=max_iter,
             shots_per_iteration=5000,
             max_configs=50,
-            seed=seed
+            seed=seed,
+            verbose=verbose
         )
         return {
             'converged': result.converged,
@@ -136,7 +138,8 @@ def run_algorithm(
             max_krylov_dim=max_iter,
             evolution_time=0.5,
             shots=4096,
-            seed=seed
+            seed=seed,
+            verbose=verbose
         )
         return {
             'converged': result.converged,
