@@ -76,15 +76,22 @@ def modified_gram_schmidt(vectors: List[np.ndarray]) -> List[np.ndarray]:
     Orthonormalize a list of vectors using modified Gram-Schmidt.
 
     Returns orthonormal vectors spanning the same subspace.
+    Uses double orthogonalization for numerical stability.
     """
     if not vectors:
         return []
 
     ortho = []
     for v in vectors:
-        # Orthogonalize against all previous vectors
-        for u in ortho:
-            v = v - np.vdot(u, v) * u
+        # Check for NaN/Inf before processing
+        if not np.isfinite(v).all():
+            continue
+
+        # Double orthogonalization for stability (reorthogonalize twice)
+        for _ in range(2):
+            for u in ortho:
+                v = v - np.vdot(u, v) * u
+
         # Normalize
         v_normalized, norm = normalize(v)
         if norm > 1e-10:  # Only keep linearly independent vectors
@@ -256,6 +263,11 @@ def run_krylov_loop(
         # Generate next Krylov vector: H|φ_{k-1}⟩
         new_vector = apply_hamiltonian(H_matrix, krylov_vectors[-1])
 
+        # Check for numerical issues
+        if not np.isfinite(new_vector).all():
+            # Numerical instability detected - stop iteration
+            break
+
         # Add to subspace
         krylov_vectors.append(new_vector)
 
@@ -263,11 +275,19 @@ def run_krylov_loop(
         if orthogonalization == "modified_gram_schmidt":
             krylov_vectors = modified_gram_schmidt(krylov_vectors)
 
+        # Check if we have enough vectors
+        if len(krylov_vectors) < 2:
+            break
+
         # Build projected matrices
         H_proj, S_proj = build_projected_matrices(H_matrix, krylov_vectors)
 
         # Solve generalized eigenvalue problem
         eigenvalues, eigenvectors = solve_generalized_eigenvalue(H_proj, S_proj)
+
+        # Check for valid eigenvalues
+        if not np.isfinite(eigenvalues).all():
+            break
 
         # Get lowest Ritz value and vector
         ritz_energy = eigenvalues[0]
@@ -276,8 +296,16 @@ def run_krylov_loop(
         # Compute Ritz vector in full space
         ritz_vector = compute_ritz_vector(krylov_vectors, ritz_coeffs)
 
+        # Check for numerical issues in Ritz vector
+        if not np.isfinite(ritz_vector).all():
+            break
+
         # Compute residual
         residual, residual_norm = compute_residual(H_matrix, ritz_vector, ritz_energy)
+
+        # Check for numerical issues in residual
+        if not np.isfinite(residual_norm):
+            break
 
         elapsed = time.time() - start_time
 
