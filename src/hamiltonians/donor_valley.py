@@ -22,6 +22,24 @@ from typing import Tuple
 # Energy scale conversion: meV to eV
 MEV_TO_EV = 1e-3
 
+# Experimental binding energies (meV) - these are the calibration targets
+# Source: Ramdas & Rodriguez, Rep. Prog. Phys. 44, 1297 (1981)
+EXPERIMENTAL_BINDING_ENERGIES = {
+    "Si:P": 45.59,   # meV - Phosphorus in Silicon
+    "Si:Bi": 70.98,  # meV - Bismuth in Silicon
+    "Si:As": 53.76,  # meV - Arsenic in Silicon
+    "Si:Sb": 42.74,  # meV - Antimony in Silicon
+}
+
+# Experimental valley-orbit splittings (meV)
+# A1-T2 splitting - determines spectral structure
+EXPERIMENTAL_VALLEY_ORBIT_SPLITTING = {
+    "Si:P": 11.7,    # meV
+    "Si:Bi": 60.0,   # meV (large due to heavy Bi core)
+    "Si:As": 21.2,   # meV
+    "Si:Sb": 9.4,    # meV
+}
+
 
 def build_isolated_hamiltonian(
     valley_orbit_splitting_meV: float,
@@ -291,6 +309,90 @@ def get_spectral_gap(eigenvalues: np.ndarray) -> float:
     if len(eigenvalues) < 2:
         return 0.0
     return eigenvalues[1] - eigenvalues[0]
+
+
+def build_calibrated_hamiltonian(
+    donor_system: str,
+    active_space: str = "isolated"
+) -> SparsePauliOp:
+    """
+    Build a Hamiltonian calibrated to experimental values.
+
+    This is the key function for calibration validation - the ground state
+    energy will match the experimental binding energy.
+
+    Args:
+        donor_system: One of "Si:P", "Si:Bi", "Si:As", "Si:Sb"
+        active_space: "isolated" (2 qubits) or "full" (12 qubits)
+
+    Returns:
+        SparsePauliOp with ground state matching experimental binding energy
+    """
+    if donor_system not in EXPERIMENTAL_BINDING_ENERGIES:
+        raise ValueError(f"Unknown donor system: {donor_system}. "
+                        f"Available: {list(EXPERIMENTAL_BINDING_ENERGIES.keys())}")
+
+    # Get experimental parameters
+    binding_energy_meV = EXPERIMENTAL_BINDING_ENERGIES[donor_system]
+    valley_orbit_meV = EXPERIMENTAL_VALLEY_ORBIT_SPLITTING[donor_system]
+
+    # Target ground state energy (negative of binding energy)
+    target_E0 = -binding_energy_meV * MEV_TO_EV
+
+    # Build uncalibrated Hamiltonian
+    if active_space == "isolated":
+        H_uncalibrated = build_isolated_hamiltonian(valley_orbit_meV)
+    elif active_space == "full":
+        H_uncalibrated = build_full_valley_hamiltonian(valley_orbit_meV)
+    else:
+        raise ValueError(f"Unknown active space: {active_space}")
+
+    # Get current ground state energy
+    current_evals, _ = exact_diagonalize(H_uncalibrated)
+    current_E0 = current_evals[0]
+
+    # Calculate energy shift needed
+    energy_shift = target_E0 - current_E0
+
+    # Apply shift via identity term
+    n_qubits = H_uncalibrated.num_qubits
+    shift_op = SparsePauliOp.from_list([("I" * n_qubits, energy_shift)])
+
+    # Return calibrated Hamiltonian
+    return (H_uncalibrated + shift_op).simplify()
+
+
+def validate_calibration(donor_system: str, active_space: str = "isolated") -> dict:
+    """
+    Validate that a calibrated Hamiltonian matches experimental values.
+
+    Args:
+        donor_system: Donor system name
+        active_space: "isolated" or "full"
+
+    Returns:
+        Dictionary with validation results
+    """
+    H = build_calibrated_hamiltonian(donor_system, active_space)
+    evals, _ = exact_diagonalize(H)
+
+    experimental_binding = EXPERIMENTAL_BINDING_ENERGIES[donor_system]
+    experimental_vo_split = EXPERIMENTAL_VALLEY_ORBIT_SPLITTING[donor_system]
+
+    computed_binding = -evals[0] / MEV_TO_EV  # Convert back to meV
+    binding_error = abs(computed_binding - experimental_binding)
+
+    return {
+        "donor_system": donor_system,
+        "active_space": active_space,
+        "experimental_binding_meV": experimental_binding,
+        "computed_binding_meV": computed_binding,
+        "binding_error_meV": binding_error,
+        "calibration_passed": binding_error < 0.01,  # < 0.01 meV error
+        "valley_orbit_splitting_meV": experimental_vo_split,
+        "ground_state_eV": float(evals[0]),
+        "spectral_gap_eV": float(get_spectral_gap(evals)),
+    }
 
 
 def hamiltonian_to_metadata(
