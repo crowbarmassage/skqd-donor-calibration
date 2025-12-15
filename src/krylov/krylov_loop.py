@@ -210,7 +210,8 @@ def run_krylov_loop(
     initial_state: Optional[np.ndarray] = None,
     max_iterations: int = 50,
     residual_tolerance: float = 1e-6,
-    orthogonalization: str = "modified_gram_schmidt"
+    orthogonalization: str = "modified_gram_schmidt",
+    verbose: bool = False
 ) -> KrylovResult:
     """
     Run the Krylov subspace iteration loop.
@@ -229,6 +230,7 @@ def run_krylov_loop(
         max_iterations: Maximum number of iterations
         residual_tolerance: Convergence threshold for residual norm
         orthogonalization: Orthogonalization method
+        verbose: Print progress each iteration
 
     Returns:
         KrylovResult with convergence info and iteration histories
@@ -319,6 +321,13 @@ def run_krylov_loop(
             subspace_dim=len(krylov_vectors),
             time_sec=elapsed
         ))
+
+        # Verbose progress output
+        if verbose:
+            log_res = np.log10(residual_norm) if residual_norm > 0 else -15
+            print(f"  iter {iteration:3d} | E = {ritz_energy:12.6f} eV | "
+                  f"residual = {residual_norm:.2e} (log={log_res:.1f}) | "
+                  f"dim = {len(krylov_vectors):3d} | {elapsed:.2f}s")
 
         # Check convergence
         if residual_norm < residual_tolerance:

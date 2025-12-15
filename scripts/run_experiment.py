@@ -28,13 +28,14 @@ from src.hamiltonians.donor_valley import build_hamiltonian_from_config, hamilto
 from src.krylov.krylov_loop import run_krylov_loop, normalize
 
 
-def run_single_experiment(config_name: str, seed: int = 42) -> dict:
+def run_single_experiment(config_name: str, seed: int = 42, verbose: bool = False) -> dict:
     """
     Run a single calibration experiment.
 
     Args:
         config_name: Name of config file (without .json)
         seed: Random seed for reproducibility
+        verbose: Print iteration-by-iteration progress
 
     Returns:
         Run log dictionary
@@ -66,15 +67,22 @@ def run_single_experiment(config_name: str, seed: int = 42) -> dict:
     max_iter = krylov_config.get("max_iterations", 50)
     tolerance = krylov_config.get("residual_tolerance", 1e-6)
 
+    # Auto-enable verbose for full (12-qubit) experiments
+    is_full = "full" in config_name
+    use_verbose = verbose or is_full
+
     # Run Krylov loop
     print(f"Running Krylov loop (max_iter={max_iter}, tol={tolerance})...")
+    if use_verbose:
+        print("  Iteration progress:")
     start_time = time.time()
 
     result = run_krylov_loop(
         hamiltonian,
         initial_state=init_state,
         max_iterations=max_iter,
-        residual_tolerance=tolerance
+        residual_tolerance=tolerance,
+        verbose=use_verbose
     )
 
     total_time = time.time() - start_time
@@ -226,11 +234,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run SKQD donor calibration experiments")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--config", type=str, help="Run single config (e.g., sip_isolated)")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Show iteration progress (auto-enabled for full experiments)")
     args = parser.parse_args()
 
     if args.config:
         # Run single experiment
-        run_log = run_single_experiment(args.config, args.seed)
+        run_log = run_single_experiment(args.config, args.seed, verbose=args.verbose)
         filepath = save_run_log(run_log)
         print(f"\nSaved: {filepath}")
     else:

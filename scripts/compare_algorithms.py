@@ -33,7 +33,8 @@ def run_comparison(
     hamiltonian,
     system_name: str,
     seed: int = 42,
-    max_iter: int = 20
+    max_iter: int = 20,
+    verbose: bool = False
 ) -> dict:
     """
     Run all algorithms on a given Hamiltonian and compare results.
@@ -43,6 +44,7 @@ def run_comparison(
         system_name: Name for logging
         seed: Random seed
         max_iter: Maximum iterations
+        verbose: Print iteration-by-iteration progress
 
     Returns:
         Dictionary with comparison results
@@ -67,7 +69,8 @@ def run_comparison(
         hamiltonian,
         initial_state=init_state,
         max_iterations=max_iter,
-        residual_tolerance=1e-6
+        residual_tolerance=1e-6,
+        verbose=verbose
     )
     classical_time = time.time() - start
 
@@ -237,22 +240,38 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compare quantum diagonalization algorithms")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--max-iter", type=int, default=15, help="Maximum iterations")
-    parser.add_argument("--system", choices=['isolated', 'all'], default='isolated',
-                       help="Which systems to test")
+    parser.add_argument("--system", choices=['isolated', 'full', 'all'], default='isolated',
+                       help="Which systems to test (isolated=2q, full=12q, all=both)")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Show iteration progress")
     args = parser.parse_args()
 
     all_results = {}
 
     # Test on isolated (2-qubit) systems
-    print("\n" + "#" * 60)
-    print("# Testing 2-qubit (isolated) systems")
-    print("#" * 60)
+    if args.system in ['isolated', 'all']:
+        print("\n" + "#" * 60)
+        print("# Testing 2-qubit (isolated) systems")
+        print("#" * 60)
 
-    for system, delta in [("Si:P", 12.0), ("Si:Bi", 60.0)]:
-        H = build_isolated_hamiltonian(delta)
-        name = f"{system} (2q)"
-        results = run_comparison(H, name, seed=args.seed, max_iter=args.max_iter)
-        all_results[name] = results
+        for system, delta in [("Si:P", 12.0), ("Si:Bi", 60.0)]:
+            H = build_isolated_hamiltonian(delta)
+            name = f"{system} (2q)"
+            results = run_comparison(H, name, seed=args.seed, max_iter=args.max_iter, verbose=args.verbose)
+            all_results[name] = results
+
+    # Test on full (12-qubit) systems
+    if args.system in ['full', 'all']:
+        print("\n" + "#" * 60)
+        print("# Testing 12-qubit (full) systems")
+        print("# NOTE: This takes much longer due to larger Hilbert space")
+        print("#" * 60)
+
+        for system, delta in [("Si:P", 12.0), ("Si:Bi", 60.0)]:
+            H = build_full_valley_hamiltonian(delta)
+            name = f"{system} (12q)"
+            # Use verbose=True by default for full systems
+            results = run_comparison(H, name, seed=args.seed, max_iter=args.max_iter, verbose=True)
+            all_results[name] = results
 
     # Print summary
     print_comparison_table(all_results)
