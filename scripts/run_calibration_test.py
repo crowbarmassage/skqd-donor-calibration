@@ -34,7 +34,13 @@ from src.hamiltonians.donor_valley import (
 from src.krylov.krylov_loop import run_krylov_loop, normalize
 
 
-def run_calibration_test(donor_system: str, active_space: str, verbose: bool = True) -> dict:
+def run_calibration_test(
+    donor_system: str,
+    active_space: str,
+    verbose: bool = True,
+    max_iter_override: int = None,
+    tolerance_override: float = None
+) -> dict:
     """
     Run calibration test for a single system.
 
@@ -42,6 +48,8 @@ def run_calibration_test(donor_system: str, active_space: str, verbose: bool = T
         donor_system: "Si:P" or "Si:Bi"
         active_space: "isolated" or "full"
         verbose: Print iteration progress
+        max_iter_override: Override default max iterations
+        tolerance_override: Override default residual tolerance
 
     Returns:
         Dictionary with test results
@@ -80,13 +88,13 @@ def run_calibration_test(donor_system: str, active_space: str, verbose: bool = T
     init_state = np.random.randn(dim) + 1j * np.random.randn(dim)
     init_state, _ = normalize(init_state)
 
-    # Set parameters based on system size
+    # Set parameters based on system size (with optional overrides)
     if active_space == "isolated":
-        max_iter = 20
-        tolerance = 1e-10
+        max_iter = max_iter_override if max_iter_override else 20
+        tolerance = tolerance_override if tolerance_override else 1e-10
     else:
-        max_iter = 50
-        tolerance = 1e-6
+        max_iter = max_iter_override if max_iter_override else 50
+        tolerance = tolerance_override if tolerance_override else 1e-6
 
     # Run Classical Krylov
     print(f"\nRunning Classical Krylov (max_iter={max_iter}, tol={tolerance})...")
@@ -144,12 +152,18 @@ def run_calibration_test(donor_system: str, active_space: str, verbose: bool = T
     }
 
 
-def run_all_calibration_tests(verbose: bool = False) -> dict:
+def run_all_calibration_tests(
+    verbose: bool = False,
+    max_iter_override: int = None,
+    tolerance_override: float = None
+) -> dict:
     """
     Run all 4 calibration tests.
 
     Args:
         verbose: Print iteration-by-iteration progress
+        max_iter_override: Override default max iterations
+        tolerance_override: Override default residual tolerance
 
     Returns:
         Dictionary with all results
@@ -173,7 +187,12 @@ def run_all_calibration_tests(verbose: bool = False) -> dict:
         key = f"{donor_system}_{active_space}"
         # Auto-enable verbose for full systems (they take longer)
         use_verbose = verbose or (active_space == "full")
-        results[key] = run_calibration_test(donor_system, active_space, verbose=use_verbose)
+        results[key] = run_calibration_test(
+            donor_system, active_space,
+            verbose=use_verbose,
+            max_iter_override=max_iter_override,
+            tolerance_override=tolerance_override
+        )
         if not results[key]["passed"]:
             all_passed = False
 
@@ -207,20 +226,35 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run calibration tests for SKQD donor systems")
     parser.add_argument("--system", choices=["Si:P", "Si:Bi"], help="Test specific donor system")
     parser.add_argument("--space", choices=["isolated", "full"], help="Test specific active space")
+    parser.add_argument("--max-iter", type=int, help="Override max iterations (default: 20 isolated, 50 full)")
+    parser.add_argument("--tolerance", "-t", type=float, help="Override residual tolerance (default: 1e-10 isolated, 1e-6 full)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Show iteration progress")
     args = parser.parse_args()
 
+    # Build kwargs for hyperparameter overrides
+    kwargs = {"verbose": args.verbose}
+    if args.max_iter:
+        kwargs["max_iter_override"] = args.max_iter
+    if args.tolerance:
+        kwargs["tolerance_override"] = args.tolerance
+
     if args.system and args.space:
         # Run single test
-        run_calibration_test(args.system, args.space, verbose=True)
+        run_calibration_test(args.system, args.space, verbose=True,
+                           max_iter_override=args.max_iter, tolerance_override=args.tolerance)
     elif args.system:
         # Run both spaces for this system
-        run_calibration_test(args.system, "isolated", verbose=args.verbose)
-        run_calibration_test(args.system, "full", verbose=True)
+        run_calibration_test(args.system, "isolated", verbose=args.verbose,
+                           max_iter_override=args.max_iter, tolerance_override=args.tolerance)
+        run_calibration_test(args.system, "full", verbose=True,
+                           max_iter_override=args.max_iter, tolerance_override=args.tolerance)
     elif args.space:
         # Run both systems for this space
-        run_calibration_test("Si:P", args.space, verbose=args.verbose or args.space == "full")
-        run_calibration_test("Si:Bi", args.space, verbose=args.verbose or args.space == "full")
+        run_calibration_test("Si:P", args.space, verbose=args.verbose or args.space == "full",
+                           max_iter_override=args.max_iter, tolerance_override=args.tolerance)
+        run_calibration_test("Si:Bi", args.space, verbose=args.verbose or args.space == "full",
+                           max_iter_override=args.max_iter, tolerance_override=args.tolerance)
     else:
         # Run all tests
-        run_all_calibration_tests(verbose=args.verbose)
+        run_all_calibration_tests(verbose=args.verbose,
+                                 max_iter_override=args.max_iter, tolerance_override=args.tolerance)
