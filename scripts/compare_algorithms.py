@@ -27,6 +27,7 @@ from src.krylov.krylov_loop import run_krylov_loop, normalize
 from src.quantum_algorithms.kqd import run_kqd
 from src.quantum_algorithms.sqd import run_sqd
 from src.quantum_algorithms.skqd import run_skqd
+from src.quantum_algorithms.classical_sbd import run_classical_sbd
 
 
 def run_comparison(
@@ -63,7 +64,7 @@ def run_comparison(
     results = {}
 
     # 1. Classical Krylov (baseline)
-    print("\n[1/4] Running Classical Krylov...")
+    print("\n[1/5] Running Classical Krylov...")
     start = time.time()
     classical_result = run_krylov_loop(
         hamiltonian,
@@ -89,8 +90,39 @@ def run_comparison(
           f"Iter: {classical_result.iterations_to_converge}, "
           f"E={classical_result.final_ritz_energy:.6f} eV")
 
-    # 2. KQD
-    print("\n[2/4] Running KQD...")
+    # 2. Classical SBD (sample-based baseline)
+    print("\n[2/5] Running Classical SBD...")
+    start = time.time()
+    sbd_result = run_classical_sbd(
+        hamiltonian,
+        max_iterations=max_iter,
+        samples_per_iteration=1000,
+        max_configs=20,
+        sampling_method="importance",
+        temperature=0.01,
+        seed=seed,
+        verbose=verbose
+    )
+    sbd_time = time.time() - start
+
+    results['Classical SBD'] = {
+        'method': 'Classical SBD',
+        'converged': sbd_result.converged,
+        'iterations': sbd_result.iterations_to_converge,
+        'final_energy': float(sbd_result.final_energy),
+        'final_residual': float(sbd_result.final_residual_norm),
+        'time_sec': sbd_time,
+        'total_shots': sbd_result.total_samples,
+        'energy_history': sbd_result.energy_history,
+        'residual_history': sbd_result.residual_history
+    }
+    print(f"   Converged: {sbd_result.converged}, "
+          f"Iter: {sbd_result.iterations_to_converge}, "
+          f"E={sbd_result.final_energy:.6f} eV, "
+          f"Samples: {sbd_result.total_samples}")
+
+    # 3. KQD
+    print("\n[3/5] Running KQD...")
     start = time.time()
     kqd_result = run_kqd(
         hamiltonian,
@@ -117,8 +149,8 @@ def run_comparison(
           f"Iter: {kqd_result.iterations_to_converge}, "
           f"E={kqd_result.final_energy:.6f} eV")
 
-    # 3. SQD
-    print("\n[3/4] Running SQD...")
+    # 4. SQD
+    print("\n[4/5] Running SQD...")
     start = time.time()
     sqd_result = run_sqd(
         hamiltonian,
@@ -144,8 +176,8 @@ def run_comparison(
           f"Iter: {sqd_result.iterations_to_converge}, "
           f"E={sqd_result.final_energy:.6f} eV")
 
-    # 4. SKQD
-    print("\n[4/4] Running SKQD...")
+    # 5. SKQD
+    print("\n[5/5] Running SKQD...")
     start = time.time()
     skqd_result = run_skqd(
         hamiltonian,
