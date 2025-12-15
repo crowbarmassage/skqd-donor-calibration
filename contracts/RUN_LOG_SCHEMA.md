@@ -1,4 +1,4 @@
-```md
+
 # RUN_LOG_SCHEMA.md
 **Canonical Run Log Schema for Donor Calibration (SKQD / Qiskit-Aer)**
 
