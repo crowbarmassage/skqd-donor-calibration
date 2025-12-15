@@ -1,4 +1,4 @@
-```md
+
 # DIRECTORY_TREE.md
 **Canonical Repository Structure for Donor Calibration (SKQD / Qiskit-Aer)**
 
