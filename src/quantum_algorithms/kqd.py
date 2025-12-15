@@ -13,7 +13,7 @@ the generalized eigenvalue problem classically.
 """
 
 import numpy as np
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, transpile
 from qiskit.circuit.library import PauliEvolutionGate
 from qiskit.quantum_info import SparsePauliOp, Statevector
 from qiskit.synthesis import SuzukiTrotter
@@ -141,8 +141,11 @@ def prepare_krylov_states_quantum(
         # Save statevector
         qc.save_statevector()
 
+        # Transpile to decompose PauliEvolutionGate into basic gates
+        qc_transpiled = transpile(qc, backend, optimization_level=0)
+
         # Run circuit
-        job = backend.run(qc, shots=1)
+        job = backend.run(qc_transpiled, shots=1)
         result = job.result()
 
         # Get evolved state
@@ -154,7 +157,7 @@ def prepare_krylov_states_quantum(
             evolved_state = evolved_state / norm
 
         krylov_states.append(evolved_state)
-        circuit_depths.append(qc.depth())
+        circuit_depths.append(qc_transpiled.depth())
 
         # Update current state for next iteration
         current_state = evolved_state

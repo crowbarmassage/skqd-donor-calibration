@@ -14,7 +14,7 @@ near-term quantum hardware with shot noise.
 """
 
 import numpy as np
-from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister, transpile
 from qiskit.circuit.library import PauliEvolutionGate
 from qiskit.quantum_info import SparsePauliOp, Statevector
 from qiskit.synthesis import SuzukiTrotter
@@ -226,7 +226,10 @@ def prepare_krylov_states_skqd(
         qc.append(evo_gate, range(num_qubits))
         qc.save_statevector()
 
-        job = backend.run(qc, shots=1)
+        # Transpile to decompose PauliEvolutionGate into basic gates
+        qc_transpiled = transpile(qc, backend, optimization_level=0)
+
+        job = backend.run(qc_transpiled, shots=1)
         evolved = np.asarray(job.result().get_statevector())
 
         norm = np.linalg.norm(evolved)
@@ -234,7 +237,7 @@ def prepare_krylov_states_skqd(
             evolved = evolved / norm
 
         krylov_states.append(evolved)
-        circuit_depths.append(qc.depth())
+        circuit_depths.append(qc_transpiled.depth())
         current_state = evolved
 
     return krylov_states, circuit_depths
