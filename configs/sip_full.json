@@ -1,0 +1,33 @@
+{
+  "system": "Si:P",
+  "description": "Full 6-valley manifold for phosphorus donor calibration",
+  "active_space": {
+    "type": "full",
+    "num_qubits": 12,
+    "basis": "valley_basis",
+    "orbitals_included": [
+      "kx_up", "kx_down",
+      "ky_up", "ky_down",
+      "kz_up", "kz_down",
+      "k_x_up", "k_x_down",
+      "k_y_up", "k_y_down",
+      "k_z_up", "k_z_down"
+    ]
+  },
+  "hamiltonian": {
+    "model": "donor_valley",
+    "valley_orbit_splitting_meV": 12.0,
+    "off_diagonal_coupling_scale": 1.0
+  },
+  "krylov": {
+    "residual_tolerance": 1e-6,
+    "max_iterations": 200,
+    "orthogonalization": "modified_gram_schmidt"
+  },
+  "backend": {
+    "simulator": "AerSimulator",
+    "mode": "sampling",
+    "shots": 8192
+  },
+  "random_seed": 12345
+}
