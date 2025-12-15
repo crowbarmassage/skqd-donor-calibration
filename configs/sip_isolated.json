@@ -1,0 +1,26 @@
+{
+  "system": "Si:P",
+  "description": "Isolated A1-only baseline for phosphorus donor calibration",
+  "active_space": {
+    "type": "isolated",
+    "num_qubits": 2,
+    "basis": "valley_basis",
+    "orbitals_included": ["A1_up", "A1_down"]
+  },
+  "hamiltonian": {
+    "model": "donor_valley",
+    "valley_orbit_splitting_meV": 12.0,
+    "off_diagonal_coupling_scale": 1.0
+  },
+  "krylov": {
+    "residual_tolerance": 1e-6,
+    "max_iterations": 50,
+    "orthogonalization": "modified_gram_schmidt"
+  },
+  "backend": {
+    "simulator": "AerSimulator",
+    "mode": "statevector",
+    "shots": null
+  },
+  "random_seed": 12345
+}
