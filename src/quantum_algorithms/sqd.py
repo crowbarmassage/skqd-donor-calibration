@@ -85,6 +85,50 @@ def create_ansatz_circuit(
     return bound_circuit
 
 
+def get_low_energy_configurations(
+    hamiltonian: SparsePauliOp,
+    num_configs: int = 10,
+    temperature: float = 0.01
+) -> List[str]:
+    """
+    Get low-energy computational basis configurations from Hamiltonian diagonal.
+
+    This is key to SQD's advantage over VQE - we use the Hamiltonian structure
+    directly to identify important configurations without optimization.
+
+    Args:
+        hamiltonian: SparsePauliOp Hamiltonian
+        num_configs: Number of configurations to return
+        temperature: Boltzmann temperature for sampling (lower = more focused)
+
+    Returns:
+        List of bit-string configurations with lowest diagonal energies
+    """
+    num_qubits = hamiltonian.num_qubits
+    dim = 2 ** num_qubits
+
+    # Get Hamiltonian matrix
+    H_matrix = hamiltonian.to_matrix()
+    if hasattr(H_matrix, 'toarray'):
+        H_matrix = H_matrix.toarray()
+    H_matrix = np.asarray(H_matrix)
+
+    # Get diagonal elements (classical energies of computational basis states)
+    diag = np.real(np.diag(H_matrix))
+
+    # Sort by energy (lowest first)
+    sorted_indices = np.argsort(diag)
+
+    # Convert indices to bit-strings
+    configs = []
+    for idx in sorted_indices[:num_configs]:
+        # Convert to bit-string (Qiskit little-endian convention)
+        bitstring = format(idx, f'0{num_qubits}b')[::-1]
+        configs.append(bitstring)
+
+    return configs
+
+
 def sample_configurations(
     circuit: QuantumCircuit,
     shots: int = 10000,
@@ -273,10 +317,15 @@ def run_sqd(
     residual_tolerance: float = 1e-6,
     ansatz_reps: int = 2,
     seed: Optional[int] = None,
-    verbose: bool = False
+    verbose: bool = False,
+    use_hamiltonian_seeding: bool = True,
+    seed_configs: int = 10
 ) -> SQDResult:
     """
     Run Sample-based Quantum Diagonalization algorithm.
+
+    SQD builds a Configuration Interaction (CI) subspace from sampled
+    computational basis configurations, avoiding VQE's optimization pitfalls.
 
     Args:
         hamiltonian: SparsePauliOp Hamiltonian
@@ -287,6 +336,8 @@ def run_sqd(
         ansatz_reps: Ansatz circuit repetitions
         seed: Random seed
         verbose: Print iteration progress
+        use_hamiltonian_seeding: Seed subspace with low-energy diagonal configs
+        seed_configs: Number of Hamiltonian-seeded configurations to include
 
     Returns:
         SQDResult with convergence info
@@ -306,17 +357,29 @@ def run_sqd(
     all_configurations: Set[str] = set()
     total_shots = 0
 
+    # Seed with low-energy configurations from Hamiltonian diagonal
+    # This is SQD's key advantage: use Hamiltonian structure directly
+    if use_hamiltonian_seeding:
+        seed_bitstrings = get_low_energy_configurations(
+            hamiltonian, num_configs=seed_configs
+        )
+        all_configurations.update(seed_bitstrings)
+        if verbose:
+            print(f"  Seeded with {len(seed_bitstrings)} low-energy configurations from H diagonal")
+
     converged = False
     final_energy = 0.0
     final_residual = float('inf')
 
     for iteration in range(max_iterations):
-        # Create ansatz with varying parameters each iteration
+        # Create ansatz with varying parameters for diverse sampling
         if seed is not None:
             np.random.seed(seed + iteration)
+
+        # Use different random initializations to explore state space
         params = np.random.randn(
             EfficientSU2(num_qubits, reps=ansatz_reps).num_parameters
-        ) * (0.1 + 0.1 * iteration)
+        ) * (0.5 + 0.2 * iteration)  # Larger spread for more diverse sampling
 
         ansatz = create_ansatz_circuit(
             num_qubits,
