@@ -1,0 +1,14 @@
+{
+  "test": "ritz_value_stabilization",
+  "hamiltonian": "Si:P isolated (2 qubits)",
+  "ritz_energy_history": [
+    -0.05696319699846435,
+    -0.05824911800041396,
+    -0.0583999999999416
+  ],
+  "is_monotonic": true,
+  "converged": true,
+  "iterations": 3,
+  "final_energy": -0.0583999999999416,
+  "test_passed": true
+}

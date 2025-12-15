@@ -1,0 +1,23 @@
+{
+  "representation": "SparsePauliOp",
+  "num_qubits": 12,
+  "term_count": 73,
+  "energy_units": "eV",
+  "config_source": {
+    "system": "Si:P",
+    "active_space_type": "full",
+    "valley_orbit_splitting_meV": 12.0,
+    "off_diagonal_coupling_scale": 1.0
+  },
+  "spectral_properties": {
+    "ground_state_energy": -0.07342041062949488,
+    "first_excited_energy": -0.07336499309650472,
+    "spectral_gap": 5.541753299015406e-05,
+    "is_ground_state_non_degenerate": true
+  },
+  "basis_info": {
+    "basis_type": "valley_basis",
+    "is_eigenbasis": false,
+    "description": "Computational basis represents valley states, not energy eigenstates"
+  }
+}

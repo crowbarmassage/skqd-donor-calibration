@@ -1,0 +1,72 @@
+{
+  "run_id": "run_SiP_isolated_20251215_031703_73785858",
+  "timestamp_utc": "2025-12-15T03:17:03Z",
+  "git_commit_hash": "e3def2a",
+  "experiment_type": "donor_calibration",
+  "material_system": "Si:P",
+  "active_space_type": "isolated",
+  "basis_description": "A1-only orbital with spin",
+  "is_eigenbasis": false,
+  "qubit_count": 2,
+  "spatial_orbital_count": 1,
+  "spin_orbital_count": 2,
+  "hamiltonian_spec": {
+    "representation": "SparsePauliOp",
+    "term_count": 6,
+    "energy_units": "eV",
+    "valley_orbit_splitting_meV": 12.0,
+    "central_cell_parameter": 1.0,
+    "diagonal_terms_only": false,
+    "notes": "Si:P parameterization"
+  },
+  "simulation_backend": {
+    "backend_name": "AerSimulator",
+    "method": "statevector",
+    "shots_per_expectation": null,
+    "seed_simulator": 12345,
+    "seed_transpiler": 12345
+  },
+  "krylov_parameters": {
+    "max_iterations": 50,
+    "residual_tolerance": 1e-06,
+    "initial_state_type": "random",
+    "orthogonalization": "modified_gram_schmidt"
+  },
+  "convergence_results": {
+    "iterations_to_converge": 3,
+    "converged": true,
+    "final_ritz_energy": -0.05839999999994161,
+    "ritz_energy_history": [
+      -0.054339927323861836,
+      -0.057341030236932794,
+      -0.05839999999994161
+    ],
+    "residual_norm_history": [
+      0.004613416183925304,
+      0.0018381350178104986,
+      5.839319994378625e-14
+    ],
+    "log_residual_slope": -5.448830179793289,
+    "convergence_penalty": null
+  },
+  "timing_results": {
+    "total_wall_time_sec": 0.001959562301635742,
+    "time_per_iteration_sec": [
+      0.0008156299591064453,
+      0.0002498626708984375,
+      0.00019693374633789062
+    ]
+  },
+  "sampling_results": {
+    "expectation_estimator": "Exact",
+    "energy_std_per_iteration": [],
+    "residual_std_per_iteration": []
+  },
+  "control_flags": {
+    "eigenbasis_control": false,
+    "initial_state_sensitivity_test": false,
+    "basis_rotation_test": false
+  },
+  "status": "success",
+  "failure_reason": null
+}

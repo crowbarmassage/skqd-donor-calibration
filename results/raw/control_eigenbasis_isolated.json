@@ -1,0 +1,34 @@
+{
+  "run_id": "control_eigenbasis_isolated_001",
+  "timestamp_utc": "2025-12-15T03:10:52.912670Z",
+  "git_commit_hash": "step_1_2_control",
+  "experiment_type": "donor_calibration_control",
+  "material_system": "Si:P",
+  "active_space_type": "isolated",
+  "basis_description": "Eigenbasis (computational basis = energy eigenstates)",
+  "is_eigenbasis": true,
+  "qubit_count": 2,
+  "spatial_orbital_count": 1,
+  "spin_orbital_count": 2,
+  "control_purpose": "Verify Krylov loop correctness - eigenbasis should converge trivially",
+  "expected_behavior": "Convergence in \u22642 iterations",
+  "convergence_results": {
+    "iterations_to_converge": 1,
+    "converged": true,
+    "final_ritz_energy": -0.058399999999941596,
+    "final_residual_norm": 5.840466998918714e-14,
+    "ritz_energy_history": [
+      -0.058399999999941596
+    ],
+    "residual_norm_history": [
+      5.840466998918714e-14
+    ]
+  },
+  "test_result": {
+    "passed": true,
+    "criterion": "iterations_to_converge <= 2",
+    "actual_iterations": 1
+  },
+  "status": "success",
+  "failure_reason": null
+}

@@ -1,0 +1,52 @@
+{
+  "description": "Isolated (2-qubit A1-only) Hamiltonians for Si:P and Si:Bi",
+  "artifact_for": "Step 1.1 - Implement 2-qubit A1-only Hamiltonian",
+  "systems": {
+    "Si:P": {
+      "representation": "SparsePauliOp",
+      "num_qubits": 2,
+      "term_count": 6,
+      "energy_units": "eV",
+      "config_source": {
+        "system": "Si:P",
+        "active_space_type": "isolated",
+        "valley_orbit_splitting_meV": 12.0,
+        "off_diagonal_coupling_scale": 1.0
+      },
+      "spectral_properties": {
+        "ground_state_energy": -0.0584,
+        "first_excited_energy": -0.05444187454245971,
+        "spectral_gap": 0.00395812545754029,
+        "is_ground_state_non_degenerate": true
+      },
+      "basis_info": {
+        "basis_type": "valley_basis",
+        "is_eigenbasis": false,
+        "description": "Computational basis represents valley states, not energy eigenstates"
+      }
+    },
+    "Si:Bi": {
+      "representation": "SparsePauliOp",
+      "num_qubits": 2,
+      "term_count": 6,
+      "energy_units": "eV",
+      "config_source": {
+        "system": "Si:Bi",
+        "active_space_type": "isolated",
+        "valley_orbit_splitting_meV": 60.0,
+        "off_diagonal_coupling_scale": 1.0
+      },
+      "spectral_properties": {
+        "ground_state_energy": -0.092,
+        "first_excited_energy": -0.07220937271229855,
+        "spectral_gap": 0.01979062728770145,
+        "is_ground_state_non_degenerate": true
+      },
+      "basis_info": {
+        "basis_type": "valley_basis",
+        "is_eigenbasis": false,
+        "description": "Computational basis represents valley states, not energy eigenstates"
+      }
+    }
+  }
+}

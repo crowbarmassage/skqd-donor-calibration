@@ -1,0 +1,50 @@
+{
+  "contract_version": "1.0.0",
+  "description": "Frozen global numerical contracts for SKQD donor calibration",
+  "frozen_date": "2025-12-15",
+
+  "numerical_contracts": {
+    "residual_tolerance": 1e-6,
+    "residual_tolerance_description": "Termination criterion: ||r_k|| < tolerance",
+
+    "log_residuals_every_iteration": true,
+    "log_residuals_description": "Residual norm must be logged at every Krylov iteration k",
+
+    "basis_type": "valley_basis",
+    "basis_description": "Non-eigen basis (valley basis) is mandatory for all production runs",
+    "eigenbasis_allowed": "control_only"
+  },
+
+  "physical_parameters": {
+    "valley_orbit_splitting": {
+      "Si:P": {"value": 12.0, "unit": "meV"},
+      "Si:Bi": {"value": 60.0, "unit": "meV"}
+    }
+  },
+
+  "active_spaces": {
+    "isolated": {
+      "num_qubits": 2,
+      "description": "A1-only orbital with spin"
+    },
+    "full": {
+      "num_qubits": 12,
+      "description": "6 valleys with spin"
+    }
+  },
+
+  "expected_orderings": {
+    "N_iter_full": "Si:P > Si:Bi",
+    "convergence_penalty": "Si:P > Si:Bi",
+    "eigenbasis_control": "converges in ≤2 iterations"
+  },
+
+  "enforcement": {
+    "deviation_policy": "Any deviation from these contracts invalidates calibration results",
+    "reference_documents": [
+      "contracts/METRICS_SPEC.md",
+      "contracts/RUN_LOG_SCHEMA.md",
+      "specs/TECHNICAL_SPECS.md"
+    ]
+  }
+}
