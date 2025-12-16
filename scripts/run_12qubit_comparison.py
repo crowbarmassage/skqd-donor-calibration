@@ -20,17 +20,36 @@ from src.hamiltonians.donor_valley import (
     EXPERIMENTAL_BINDING_ENERGIES, EXPERIMENTAL_VALLEY_ORBIT_SPLITTING
 )
 from src.krylov.krylov_loop import run_krylov_loop, normalize
+from src.utils.initial_states import (
+    generate_initial_state, compute_initial_metrics, InitialStateMethod
+)
 
 
-def run_comparison(max_iter: int = 100, tolerance: float = 1e-8, verbose: bool = True):
-    """Run 12-qubit convergence comparison for Si:P and Si:Bi."""
+def run_comparison(
+    max_iter: int = 100,
+    tolerance: float = 1e-8,
+    verbose: bool = True,
+    init_method: InitialStateMethod = "low_energy_superposition",
+    seed: int = 42
+):
+    """Run 12-qubit convergence comparison for Si:P and Si:Bi.
+
+    Args:
+        max_iter: Maximum iterations
+        tolerance: Residual convergence tolerance
+        verbose: Print iteration progress
+        init_method: Initial state generation method for fair comparison
+        seed: Random seed for reproducibility
+    """
 
     print('=' * 70)
     print('12-QUBIT FULL VALLEY CONVERGENCE COMPARISON')
     print('=' * 70)
     print(f'Parameters: max_iter={max_iter}, tolerance={tolerance}')
+    print(f'Initial state method: {init_method}')
 
     results = {}
+    init_metrics_all = {}
 
     for donor in ['Si:P', 'Si:Bi']:
         print(f'\n{"#" * 50}')
@@ -49,11 +68,18 @@ def run_comparison(max_iter: int = 100, tolerance: float = 1e-8, verbose: bool =
         print(f'Exact E0: {exact_E0:.6f} eV')
         print(f'Spectral gap: {gap*1000:.3f} meV')
 
-        # Same initial state for both (seeded)
-        dim = 2 ** H.num_qubits
-        np.random.seed(42)
-        init = np.random.randn(dim) + 1j * np.random.randn(dim)
-        init, _ = normalize(init)
+        # Generate standardized initial state
+        init = generate_initial_state(H, method=init_method, seed=seed)
+
+        # Compute and display initial state metrics
+        init_metrics = compute_initial_metrics(H, init)
+        init_metrics_all[donor] = init_metrics
+
+        print(f'\nInitial state metrics:')
+        print(f'  Ground state overlap: {init_metrics["ground_state_overlap"]:.4f}')
+        print(f'  Initial residual: {init_metrics["initial_residual"]:.4e}')
+        print(f'  Normalized residual: {init_metrics["normalized_residual"]:.4f}')
+        print(f'  Energy error: {init_metrics["energy_error"]*1000:.3f} meV')
 
         # Run classical Krylov
         print(f'\nRunning classical Krylov (max {max_iter} iters, tol={tolerance})...')
@@ -74,7 +100,8 @@ def run_comparison(max_iter: int = 100, tolerance: float = 1e-8, verbose: bool =
             'gap_meV': gap * 1000,
             'valley_orbit_meV': EXPERIMENTAL_VALLEY_ORBIT_SPLITTING[donor],
             'initial_residual': result.residual_norm_history[0] if result.residual_norm_history else None,
-            'residual_history': result.residual_norm_history
+            'residual_history': result.residual_norm_history,
+            'init_metrics': init_metrics
         }
 
         print(f'\n--- {donor} Summary ---')
@@ -99,6 +126,20 @@ def print_comparison_summary(results: dict):
     print('CONVERGENCE COMPARISON SUMMARY')
     print('=' * 70)
 
+    # Initial state comparison
+    print('\nINITIAL STATE COMPARISON (Fair Starting Point)')
+    print('-' * 50)
+    sip_init = sip['init_metrics']
+    sibi_init = sibi['init_metrics']
+    print(f'''
+                        Si:P            Si:Bi
+Ground overlap:         {sip_init['ground_state_overlap']:.4f}          {sibi_init['ground_state_overlap']:.4f}
+Initial residual:       {sip_init['initial_residual']:.2e}      {sibi_init['initial_residual']:.2e}
+Normalized residual:    {sip_init['normalized_residual']:.4f}          {sibi_init['normalized_residual']:.4f}  <- Should be EQUAL
+''')
+
+    print('CONVERGENCE RESULTS')
+    print('-' * 50)
     print(f'''
                         Si:P            Si:Bi           Ratio (P/Bi)
 Valley-orbit gap:       {sip['valley_orbit_meV']:6.1f} meV      {sibi['valley_orbit_meV']:6.1f} meV       {sip['valley_orbit_meV']/sibi['valley_orbit_meV']:.2f}
@@ -169,13 +210,22 @@ def main():
                         help='Residual tolerance (default: 1e-8)')
     parser.add_argument('--quiet', '-q', action='store_true',
                         help='Suppress iteration-by-iteration output')
+    parser.add_argument('--init-method', '-i', type=str,
+                        default='low_energy_superposition',
+                        choices=['random', 'low_energy_superposition',
+                                'perturbed_ground', 'uniform_overlap'],
+                        help='Initial state generation method (default: low_energy_superposition)')
+    parser.add_argument('--seed', '-s', type=int, default=42,
+                        help='Random seed (default: 42)')
 
     args = parser.parse_args()
 
     run_comparison(
         max_iter=args.max_iter,
         tolerance=args.tolerance,
-        verbose=not args.quiet
+        verbose=not args.quiet,
+        init_method=args.init_method,
+        seed=args.seed
     )
 
 
